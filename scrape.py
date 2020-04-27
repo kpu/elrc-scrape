@@ -4,6 +4,7 @@ import sys
 import time
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import NoSuchElementException
 
 def setup_driver():
     profile = webdriver.FirefoxProfile();
@@ -42,7 +43,6 @@ def parse_page_for_resources(driver):
         headline = driver.find_element_by_css_selector(".content_box > h3:nth-child(1)").text
         assert headline == "0 Language Resources"
     return ret
-  
 
 #Take a link and extract all search results, including multiple pages.
 #Example URL: https://elrc-share.eu/repository/search/?q=&selected_facets=licenceFilter_exact%3APublic%20Domain&selected_facets=multilingualityTypeFilter_exact%3AParallel&selected_facets=resourceTypeFilter_exact%3Acorpus
@@ -74,11 +74,18 @@ def download_corpus(driver, resource_link):
         print("Skipping " + download + " since it already exists.")
         return
     change_download_directory(driver, download)
-    driver.get("https://elrc-share.eu/repository/download/" + longhash + '/')
+    download_url = "https://elrc-share.eu/repository/download/" + longhash + '/'
+    driver.get(download_url)
     header = driver.find_element_by_css_selector("#content > h2:nth-child(2)").text
     if header == "Permission Denied (403)":
         print("Got 403 for downloading " + resource_link.href)
         return
+    try:
+        element = driver.find_element_by_id("id_licence_agree")
+    except(NoSuchElementException):
+        print("No download link on " + download_url)
+        return
+    element.click()
     try:
         os.mkdir(download)
     except(FileExistsError):
@@ -87,8 +94,6 @@ def download_corpus(driver, resource_link):
             return
     with open(download + "/metadata.txt", "w") as f:
         f.write(resource_link.href + "\n" + resource_link.license + "\n")
-    element = driver.find_element_by_id("id_licence_agree")
-    element.click()
     element.submit()
     print("Downloading " + download + "/archive.zip")
     while not os.path.exists(download + '/archive.zip.part') and not os.path.exists(download + '/archive.zip'):
@@ -97,6 +102,7 @@ def download_corpus(driver, resource_link):
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Scraper for ELRC-SHARE. Provide a search URL like https://elrc-share.eu/repository/search/?q=&selected_facets=licenceFilter_exact%3APublic%20Domain&selected_facets=multilingualityTypeFilter_exact%3AParallel&selected_facets=resourceTypeFilter_exact%3Acorpus to download all public-domain data.")
+        sys.exit(1)
     search_url = sys.argv[1]
     driver = setup_driver()
     for c in list_resources(driver, search_url):

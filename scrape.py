@@ -55,7 +55,7 @@ def list_resources(driver, search_url):
     headline = driver.find_element_by_css_selector(".content_box > h3:nth-child(1)").text
     if headline.find("Page") == -1:
         #No pagination
-        return links
+        return resources
     pagination = headline[headline.find("Page")+4:]
     assert pagination[0] == ' '
     assert pagination[-1] == ')'

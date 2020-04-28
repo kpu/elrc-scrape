@@ -3,6 +3,7 @@ import os
 import sys
 import time
 from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
 
@@ -13,7 +14,9 @@ def setup_driver():
     profile.set_preference("browser.helperApps.neverAsk.saveToDisk","application/zip")
     profile.set_preference("general.warnOnAboutConfig", False)
     profile.set_preference("browser.aboutConfig.showWarning", False)
-    return webdriver.Firefox(firefox_profile = profile)
+    options = Options()
+    options.headless = True
+    return webdriver.Firefox(firefox_profile = profile, firefox_options = options)
 
 #https://tarunlalwani.com/post/change-profile-settings-at-runtime-firefox-selenium/
 def set_string_preference(driver, name, value):

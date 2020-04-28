@@ -5,7 +5,7 @@ As a machine translation person, you just want the all the parallel corpora with
 
 There's also parallel data available for download at [ELRC-SHARE](https://elrc-share.eu/) under public domain, public sector information, creative commons, and a few other licenses.  Unfortunately, their site appears to require clicking for each corpus.  And honestly, it's probably not worth your time to download [44 parallel sentences](https://elrc-share.eu/repository/browse/methodological-reconciliation-processed/8fba4be6171411e8b7d400155d0267061a11daf2beeb48cf8834ec9c3278db68/).  
 
-While there is [an official client](https://gitlab.com/ilsp-nlpli-elrc-share/elrc-share-client), it appears to require a login which in return requires an affiliation with ELRC or a CEF-funded project.  
+While there is [an official client](https://gitlab.com/ilsp-nlpli-elrc-share/elrc-share-client), it appears to require a login which in turn requires an affiliation with ELRC or a CEF-funded project.  
 
 So I made a selenium scraper.  [Shop for the corpora you want](https://elrc-share.eu/repository/search/) using the filters.  When you're done, copy the search URL and provide it as an argument to the scraper.  Remember to quote the URL.  
 ```bash

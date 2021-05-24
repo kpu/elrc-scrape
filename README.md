@@ -10,16 +10,16 @@ While there is [an official client](https://gitlab.com/ilsp-nlpli-elrc-share/elr
 The plan is for all the corpora to be listed in the [mtdata](https://github.com/thammegowda/mtdata) tool.  Go use that.  
 
 If you want to update mtdata's index from elrc-share:
-1. ELRC uses sequence numbers.  Download all of the JSON files.  
 ```bash
+# Download JSON files.
 for ((i=0;i<5000;++i)); do
   if [ ! -s $i.json ]; then
     echo wget -O $i.json https://www.elrc-share.eu/repository/export_json/$i/
   fi
 done |parallel
+# Download zip files
+./parse.py |parallel
+# Generate new index file for mtdata. https://github.com/thammegowda/mtdata
+./parse.py >elrc_share.py
 ```
-Many of these will yield error 500.  That's expected.  If you don't get a series of 500s at the end, the ELRC has more than 5000 records.  Increase the number and edit `NUM_MAX` in `parse.py`
-2. Run `./parse.py` which will (hopefully) tell you commands to download zips.  That or the metadata changed and you'll need to patch it.
-3. Download all the files according to the wget commands printed.
-4. Run `./parse.py` again.  It should print python suitable for inclusion in the excellent [mtdata](https://github.com/thammegowda/mtdata) index.
-5. Use https://github.com/thammegowda/mtdata to actually get any corpora
+ELRC uses sequence numbers.  Many of these will yield error 500.  That's expected.  If you don't get a series of 500s at the end, the ELRC has more than 5000 records.  Increase the number and edit `NUM_MAX` in `parse.py`

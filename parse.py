@@ -34,18 +34,45 @@ def possibly_empty_list(above, key):
     except KeyError:
         return []
 
+STOPWORDS=set(w.lower() for w in ['of', 'Bilingual', 'the', 'COVID-19', 'from', 'corpus', '(Processed)', '-', 'dataset', 'and', 'dataset.', 'parallel', 'Multilingual', 'website', 'release', 'in', '(EN,', 'Parallel', 'FR,', 'for', 'ES,', 'on', 'EU', 'Dictionary', 'domain', 'The', 'Ministry', 'DE,', 'terminology', 'glossary', 'Republic', 'Office', 'European', '(EN-FR)', 'IT,', 'Glossary', 'PT,', 'Corpus', 'National', 'Polish-English', '(EN-ES)', 'English', 'terms', 'v2', 'documents', 'Monolingual', '(English', 'Termcat', 'Public', 'EN,', 'Agency', 'PL,', 'Publications', 'project', 'Croatian-English', 'Terms', 'Evroterm', 'English-Norwegian', '(EN-DE)', 'EUROPARL', 'terms,', 'Anonymised', 'texts', 'Organization', 'RU,', 'HU,',  'EL,', 'Βilingual', 'case', 'data', 'IP', 'FI,', 'Esterm.', 'Website', 'website', '.', 'with', 'resource', 'Web', 'Site', 'Translation', 'Memories', 'content', 'memory', 'bilingue', 'translations', 'TMX', 'contents', 'TM', 'field', '–', 'concerning', 'Trilingual', 'related', 'to', 'PDF', 'PDFs', 'word'])
+def stop_word(word):
+    if word.lower() in STOPWORDS:
+        return True
+    if word.startswith("(") or word.endswith(')'):
+        return True
+    # Usually languages
+    if '-' in word:
+        try:
+            # Allow year ranges
+            int(word.split('-')[0])
+            return False
+        except ValueError:
+            return True
+    if len(word) == 0:
+        return True
+    return False
+
+def heuristic_short_name(name : str):
+    name = name.replace(',', '').replace("’s", '').replace("'s", '').replace('/', ' ').replace('&', ' ').replace('"', ' ').replace("U.S.", "US").replace("'", '').replace("State-related", "State").replace("Anti-Corruption", "Anticorruption").replace("Secretariat-General", "Secretariat_General")
+    split = name.split(' ')
+    ret = '_'.join([n for n in split if not stop_word(n)])
+    if len(ret) == 0:
+        if name.endswith(" website parallel corpus (Processed)") and '-' in split[0]:
+             return "government_websites_" + name.split(' ')[0].replace('-', '_')
+    return ret.replace('-', '_').replace('.', '_')
+
 class Corpus:
     def __init__(self, number : int, json_data):
         self.number = number
         self.json_data = json_data
-        #Feel bad about this, maybe some headword extraction
-        self.shortname = str(number)
         # Extract name, preferably in English.
         names = list_if_not(json_data["resourceInfo"]["identificationInfo"]["resourceName"])
         self.name = names[0]["#text"]
         for n in names:
             if n["@lang"] == "en":
                 self.name = n["#text"]
+        #Feel bad about this, maybe some headword extraction
+        self.shortname = heuristic_short_name(self.name)
         self.processed_name = self.name.endswith("(Processed)")
         self.info_url = json_data["resourceInfo"]["identificationInfo"]["url"]
 
@@ -142,6 +169,15 @@ class Corpus:
            if linguality == "multilingual" and 'multilingualityType' in info['lingualityInfo'] and info['lingualityInfo']['multilingualityType'] in ['other', 'comparable']:
                self.reject(f"multilingualityType is {info['lingualityInfo']['multilingualityType']}")
                return
+           try:
+               url = info["creationInfo"]["originalSource"]["targetResourceNameURI"]
+               if url.startswith("http"):
+                   if self.number == 937:
+                       url = "https://vp1992-2001.president.ee" # Incorrect metadata
+                   # Sigh, why is . banned
+                   self.shortname = url.split('/')[2].replace('.', '_').replace('-', '_')
+           except (KeyError, TypeError):
+               pass
            
 
         self.linguality = set(info['lingualityInfo']['lingualityType'] for info in j["resourceInfo"]["resourceComponentType"]["corpusInfo"]["corpusMediaType"]["corpusTextInfo"])
@@ -271,6 +307,43 @@ def hotfix_metadata(corpora):
     corpora[403].shortname = "Rights_Arrested"
     corpora[401].shortname = "Swedish_Labour_Part2"
     corpora[406].shortname = "Swedish_Labour_Part1"
+    for corpus in corpora:
+        if corpus and corpus.name.startswith("Compilation of ") and corpus.name.endswith(" parallel corpora resources used for training of NTEU Machine Translation engines."):
+            corpus.shortname = 'NTEU'
+    corpora[422].shortname = 'Portuguese_legislation'
+    corpora[471].shortname = 'Bugarian_Revenue'
+    corpora[492].shortname = 'Romanian_Wikipedia'
+    corpora[511].shortname = 'bokmenntaborgin_is'
+    corpora[630].shortname = 'BMVI_Publications'
+    corpora[631].shortname = 'BMVI_Website'
+    corpora[634].shortname = 'BMI_Brochures_2011_2015'
+    corpora[649].shortname = 'Greek_administration'
+    corpora[335].shortname = 'government_websites_espt'
+    corpora[651].shortname = 'government_websites_Croatian'
+    corpora[652].shortname = 'Greek_law'
+    corpora[1087].shortname = "German_Foreign_Office_2016_2018"
+    corpora[1088].shortname = "German_Foreign_Office_2016"
+    corpora[1089].shortname = "German_Foreign_Office_2017"
+    corpora[1090].shortname = "German_Foreign_Office_2018"
+    corpora[489].shortname = "Secretariat_General_Part1"
+    corpora[490].shortname = "Secretariat_General_Part2"
+    corpora[770].shortname = "National_Security_Defence"
+    corpora[1973].shortname = "Italian_legal_terminology"
+    corpora[1945].shortname = "Italian_legal_terminology"
+    # There are two of them: 718 and 508.  No idea why.
+    corpora[508].shortname = "Tilde_Statistics_Iceland"
+    corpora[798].shortname = "Financial_Stability_Bank_Poland_2013_14"
+    corpora[799].shortname = "Financial_Stability_Bank_Poland_2015_16"
+    corpora[472].shortname = "Polish_Central_Statistical_Publications"
+    corpora[1805].shortname += "_ennb"
+    corpora[1806].shortname += "_nben"
+    corpora[1945].shortname += "_itde"
+    corpora[1973].shortname += "_deit"
+    corpora[2424].shortname += "_Part1"
+    # Ugh names differed by a .
+    for c in [2425, 2613, 2615, 2617, 2624, 2625, 2640, 2642]:
+        corpora[c].shortname += "_Part2"
+
 
 # What files to keep in zip, mostly for sanity checking that we have everything.
 def keep_file(n : str):
@@ -330,7 +403,7 @@ def entry_template(corpus : Corpus, inpaths : List[str], shortname = None, langu
         if corpus.shortname is None:
             raise Exception(f"Need to assign a shortname for {corpus.number} {corpus.name}")
         shortname = corpus.shortname
-    cite = "@misc{ELRC-" + shortname + ", title={" + corpus.name.replace("'", "\\'")  + "}, url={" + corpus.info_url + "},}"
+    cite = "@misc{ELRC-" + shortname + ", title={" + corpus.name.replace("'", "\\'")  + "}, url={" + corpus.info_url + "},note={ELRC " + str(corpus.number) + "},}"
     assert len(languages) == 2
     langs = list(languages)
     ret = f"index.add_entry(Entry(langs=('{langs[0]}','{langs[1]}'), name='ELRC_{shortname}', url='{corpus.download}', filename='ELRC_{corpus.number}.zip', in_ext='tmx', in_paths=["
@@ -375,7 +448,6 @@ def create_records(corpora: List[Corpus]):
     for corpus in remaining:
         tmxes = [f for f in corpus.files if f.endswith(".tmx")]
         if corpus.name.startswith("Compilation of ") and corpus.name.endswith(" parallel corpora resources used for training of NTEU Machine Translation engines."):
-            corpus.shortname = 'NTEU'
             records += nteu(corpus)
         elif len(corpus.files) == 1 and corpus.files[0].endswith(".tmx") and len(corpus.languages) == 2:
             # Sane corpora, thank you!
@@ -404,6 +476,15 @@ def create_records(corpora: List[Corpus]):
         else:
             raise Exception(f"Unsure what the TMX structure of {corpus.number} {corpus.name} is with {corpus.files}")
     return records
+
+def print_mtdata(corpora):
+    print("#!/usr/bin/env python")
+    print("# Generated by https://github.com/kpu/elrc-scrape")
+    print("from mtdata.index import Index, Entry")
+    print("def load_all(index: Index):")
+    for r in create_records(corpora):
+        print("    " + r)
+
 try:
     corpora = load_metadata()
 except FileNotFoundError:
@@ -418,10 +499,8 @@ if len(to_download) != 0:
         print(c.wget())
     sys.exit(2)
 hotfix_files(corpora)
-print("#!/usr/bin/env python")
-print("# Generated by https://github.com/kpu/elrc-scrape")
-print("from mtdata.index import Index, Entry")
-print("def load_all(index: Index):")
-for r in create_records(corpora):
-    print("    " + r)
-sys.exit(0)
+print_mtdata(corpora)
+#for c in corpora:
+#    if c and not c.rejected:
+#        print(c.shortname)
+#        print(c.name)

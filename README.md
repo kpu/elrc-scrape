@@ -7,9 +7,7 @@ There's also parallel data available for download at [ELRC-SHARE](https://elrc-s
 
 While there is [an official client](https://gitlab.com/ilsp-nlpli-elrc-share/elrc-share-client), it appears to require a login which in turn requires an affiliation with ELRC or a CEF-funded project.  So I made a scraper of sorts.
 
-The plan is for all the corpora to be listed in the [mtdata](https://github.com/thammegowda/mtdata) tool.  Go use that.  
-
-If you want to update mtdata's index from elrc-share:
+Here's how to make a TSV of public parallel corpora in ELRC-SHARE:
 ```bash
 # Download JSON files.
 for ((i=0;i<5000;++i)); do
@@ -19,7 +17,9 @@ for ((i=0;i<5000;++i)); do
 done |parallel
 # Download zip files
 ./parse.py |parallel
-# Generate new index file for mtdata. https://github.com/thammegowda/mtdata
-./parse.py >elrc_share.py
+# Generate TSV with l1, l2, num, short_name, name, info, download, post (string for HTTP POST, empty if not required), licenses (space separated), in_paths (tab separated if multiple files)
+./parse.py >elrc_share.tsv
 ```
-ELRC uses sequence numbers.  Many of these will yield error 500.  That's expected.  If you don't get a series of 500s at the end, the ELRC has more than 5000 records.  Increase the number and edit `NUM_MAX` in `parse.py`
+ELRC uses sequence numbers.  Many of these will yield error 500.  That's expected.  If you don't get a series of 500s at the end, ELRC has more than 5000 records.  Increase the number and edit `NUM_MAX` in `parse.py`
+
+The plan is for all the corpora to be listed in the [mtdata](https://github.com/thammegowda/mtdata) tool for automatic downloading.

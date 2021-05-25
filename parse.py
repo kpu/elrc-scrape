@@ -34,7 +34,7 @@ def possibly_empty_list(above, key):
     except KeyError:
         return []
 
-STOPWORDS=set(w.lower() for w in ['of', 'Bilingual', 'the', 'COVID-19', 'from', 'corpus', '(Processed)', '-', 'dataset', 'and', 'dataset.', 'parallel', 'Multilingual', 'website', 'release', 'in', '(EN,', 'Parallel', 'FR,', 'for', 'ES,', 'on', 'EU', 'Dictionary', 'domain', 'The', 'Ministry', 'DE,', 'terminology', 'glossary', 'Republic', 'Office', 'European', '(EN-FR)', 'IT,', 'Glossary', 'PT,', 'Corpus', 'National', 'Polish-English', '(EN-ES)', 'English', 'terms', 'v2', 'documents', 'Monolingual', '(English', 'Termcat', 'Public', 'EN,', 'Agency', 'PL,', 'Publications', 'project', 'Croatian-English', 'Terms', 'Evroterm', 'English-Norwegian', '(EN-DE)', 'EUROPARL', 'terms,', 'Anonymised', 'texts', 'Organization', 'RU,', 'HU,',  'EL,', 'Βilingual', 'case', 'data', 'IP', 'FI,', 'Esterm.', 'Website', 'website', '.', 'with', 'resource', 'Web', 'Site', 'Translation', 'Memories', 'content', 'memory', 'bilingue', 'translations', 'TMX', 'contents', 'TM', 'field', '–', 'concerning', 'Trilingual', 'related', 'to', 'PDF', 'PDFs', 'word'])
+STOPWORDS = set(w.lower() for w in ['of', 'Bilingual', 'the', 'COVID-19', 'from', 'corpus', '(Processed)', '-', 'dataset', 'and', 'dataset.', 'parallel', 'Multilingual', 'website', 'release', 'in', '(EN,', 'Parallel', 'FR,', 'for', 'ES,', 'on', 'EU', 'Dictionary', 'domain', 'The', 'Ministry', 'DE,', 'terminology', 'glossary', 'Republic', 'Office', 'European', '(EN-FR)', 'IT,', 'Glossary', 'PT,', 'Corpus', 'National', 'Polish-English', '(EN-ES)', 'English', 'terms', 'v2', 'documents', 'Monolingual', '(English', 'Termcat', 'Public', 'EN,', 'Agency', 'PL,', 'Publications', 'project', 'Croatian-English', 'Terms', 'Evroterm', 'English-Norwegian', '(EN-DE)', 'EUROPARL', 'terms,', 'Anonymised', 'texts', 'Organization', 'RU,', 'HU,',  'EL,', 'Βilingual', 'case', 'data', 'IP', 'FI,', 'Esterm.', 'Website', 'website', '.', 'with', 'resource', 'Web', 'Site', 'Translation', 'Memories', 'content', 'memory', 'bilingue', 'translations', 'TMX', 'contents', 'TM', 'field', '–', 'concerning', 'Trilingual', 'related', 'to', 'PDF', 'PDFs', 'word', 'Memorias', 'traducción', 'de'])
 def stop_word(word):
     if word.lower() in STOPWORDS:
         return True
@@ -59,7 +59,7 @@ def heuristic_short_name(name : str):
     if len(ret) == 0:
         if name.endswith(" website parallel corpus (Processed)") and '-' in split[0]:
              return "government_websites_" + name.split(' ')[0].replace('-', '_')
-    return ret.replace('-', '_').replace('.', '_')
+    return ret.replace('-', '_')
 
 class Corpus:
     def __init__(self, number : int, json_data):
@@ -174,8 +174,8 @@ class Corpus:
                if url.startswith("http"):
                    if self.number == 937:
                        url = "https://vp1992-2001.president.ee" # Incorrect metadata
-                   # Sigh, why is . banned
-                   self.shortname = url.split('/')[2].replace('.', '_').replace('-', '_')
+                   # Sadly some domains will be broken with _
+                   self.shortname = url.split('/')[2].replace('-', '_')
            except (KeyError, TypeError):
                pass
            
@@ -340,7 +340,7 @@ def hotfix_metadata(corpora):
     corpora[1945].shortname += "_itde"
     corpora[1973].shortname += "_deit"
     corpora[2424].shortname += "_Part1"
-    # Ugh names differed by a .
+    # Ugh names differed by a .  Asked, they said they think it is two different parts due to ELRI limitations.
     for c in [2425, 2613, 2615, 2617, 2624, 2625, 2640, 2642]:
         corpora[c].shortname += "_Part2"
 
@@ -403,23 +403,13 @@ def entry_template(corpus : Corpus, inpaths : List[str], shortname = None, langu
         if corpus.shortname is None:
             raise Exception(f"Need to assign a shortname for {corpus.number} {corpus.name}")
         shortname = corpus.shortname
-    cite = "@misc{ELRC-" + shortname + ", title={" + corpus.name.replace("'", "\\'")  + "}, url={" + corpus.info_url + "},note={ELRC " + str(corpus.number) + "},}"
     assert len(languages) == 2
     langs = list(languages)
-    ret = f"index.add_entry(Entry(langs=('{langs[0]}','{langs[1]}'), name='ELRC_{shortname}', url='{corpus.download}', filename='ELRC_{corpus.number}.zip', in_ext='tmx', in_paths=["
-    paths = ["'" + p.replace("'", "\\'") + "'" for p in inpaths]
-    ret += ','.join(paths)
-    ret += f"], cite='{cite}'))"
-    return ret
-
-def nteu(corpus):
-    langs = list(corpus.languages)
-    langs.sort()
-    tiera = langs[0] + "-" + langs[1] + "-a.tmx"
-    assert tiera in corpus.files
-    tierb = langs[0] + "-" + langs[1] + "-b.tmx"
-    assert tierb in corpus.files
-    return [entry_template(corpus, [tiera], shortname = "NTEU_TierA"), entry_template(corpus, [tierb], shortname = "NTEU_TierB")]
+    if corpus.post:
+        post = corpus.post
+    else:
+        post = ""
+    return '\t'.join([langs[0], langs[1], str(corpus.number), shortname, corpus.name.replace("\t", ' '), corpus.info_url, corpus.download, post, ' '.join(corpus.licenses)] + inpaths)
 
 def parse_language(filename, languages):
     filename = filename.replace("en-GB", "en").replace("de-DE", "de").replace("fr-FR", "fr").replace("it-IT", "it").replace("es-ES", "es").replace("pt-PT", "pt")
@@ -444,24 +434,30 @@ def parse_language(filename, languages):
 
 def create_records(corpora: List[Corpus]):
     remaining = [c for c in corpora if c and c.rejected is None]
-    records = []
     for corpus in remaining:
         tmxes = [f for f in corpus.files if f.endswith(".tmx")]
         if corpus.name.startswith("Compilation of ") and corpus.name.endswith(" parallel corpora resources used for training of NTEU Machine Translation engines."):
-            records += nteu(corpus)
+            langs = list(corpus.languages)
+            langs.sort()
+            tiera = langs[0] + "-" + langs[1] + "-a.tmx"
+            assert tiera in corpus.files
+            tierb = langs[0] + "-" + langs[1] + "-b.tmx"
+            assert tierb in corpus.files
+            yield entry_template(corpus, [tiera], shortname = "NTEU_TierA")
+            yield entry_template(corpus, [tierb], shortname = "NTEU_TierB")
         elif len(corpus.files) == 1 and corpus.files[0].endswith(".tmx") and len(corpus.languages) == 2:
             # Sane corpora, thank you!
-            records.append(entry_template(corpus, corpus.files))
+            yield entry_template(corpus, corpus.files)
         elif len(corpus.files) == 1 and corpus.files[0].endswith(".tmx") and len(corpus.languages) > 2:
             # There are 3 multi-lingual corpora that use a single TMX.
             langs = list(corpus.languages)
             for i, l1 in enumerate(langs):
                 for l2 in langs[i+1:]:
-                    records.append(entry_template(corpus, corpus.files, languages = (l1,l2)))
+                    yield entry_template(corpus, corpus.files, languages = (l1,l2))
         elif len(corpus.languages) == 2:
             if len(tmxes) != len(corpus.files):
                 raise Exception(f"Expected all TMX files.  Check for extra cruft in {corpus.number}: {corpus.files}")
-            records.append(entry_template(corpus, tmxes))
+            yield entry_template(corpus, tmxes)
         elif len(corpus.languages) > 2 and len(tmxes) > 1:
             # Multilingual with separate TMXes.  Parse filenames into language codes and gather by language code.
             pairs = {}
@@ -472,18 +468,13 @@ def create_records(corpora: List[Corpus]):
                 else:
                     pairs[pair] = [f]
             for pair, files in pairs.items():
-                records.append(entry_template(corpus, files, languages = pair))
+                yield entry_template(corpus, files, languages = pair)
         else:
             raise Exception(f"Unsure what the TMX structure of {corpus.number} {corpus.name} is with {corpus.files}")
-    return records
 
 def print_mtdata(corpora):
-    print("#!/usr/bin/env python")
-    print("# Generated by https://github.com/kpu/elrc-scrape")
-    print("from mtdata.index import Index, Entry")
-    print("def load_all(index: Index):")
     for r in create_records(corpora):
-        print("    " + r)
+        print(r)
 
 try:
     corpora = load_metadata()
@@ -500,7 +491,3 @@ if len(to_download) != 0:
     sys.exit(2)
 hotfix_files(corpora)
 print_mtdata(corpora)
-#for c in corpora:
-#    if c and not c.rejected:
-#        print(c.shortname)
-#        print(c.name)

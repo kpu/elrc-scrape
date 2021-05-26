@@ -459,6 +459,7 @@ def entry_template(corpus : Corpus, inpaths : List[str], shortname = None, langu
         shortname = corpus.shortname
     assert len(languages) == 2
     langs = list(languages)
+    langs.sort()
     if corpus.post:
         post = corpus.post
     else:

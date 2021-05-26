@@ -272,6 +272,7 @@ def hotfix_metadata(corpora):
     corpora[2606].reject("XLIFF format; TMX is supposed to be available as 2610 but that is not available for download yet and the corpus is too small to bother with an XLIFF parser")
     corpora[2483].reject("Unaligned text file")
     corpora[3860].reject("Available in another format as 3859")
+    corpora[1133].reject("Actually contains an English-Finnish corpus that duplicates corpus 1127")
     for i in [3858, 3859, 3860, 3861, 3862, 3864]:
         corpora[i].reject("Same download location as EMEA.")
     corpora[3836].reject("TODO: extract from this non-standard format")
@@ -542,3 +543,13 @@ if len(to_download) != 0:
     sys.exit(2)
 hotfix_files(corpora)
 print_mtdata(corpora)
+
+# TSV of failures
+#with open("../fails.txt") as f:
+#   for line in f:
+#       line = line.strip()
+#       if len(line) == 0:
+#           continue
+#       num, comment = line.split(' ', maxsplit=1)
+#       num = int(num)
+#       print(f"{num}\t{corpora[num].info_url}\t{corpora[num].name}\t{comment}")

@@ -7,6 +7,7 @@ import os
 import re
 import sys
 import zipfile
+from xml.etree import ElementTree
 
 from typing import List
 
@@ -368,14 +369,51 @@ def keep_file(n : str):
         return False
     return True
 
+
+# Codes seen in ELRC-SHARE names
+MAP639 = {
+    "eng" : "en",
+    "bul" : "bg",
+    "lav" : "lv",
+    "ell" : "el",
+    "pol" : "pl",
+    "ron" : "ro",
+    "fra" : "fr",
+}
+
+def normalize_language_code(code):
+    code = code.split('-')[0].lower()
+    if code in MAP639:
+        code = MAP639[code]
+    return code
+
+# Read first record of TMX to guess languages.  Note this will underreport for files that have different languages in each record like Khresmoi
+def sense_tmx_languages(tmx):
+    context = ElementTree.iterparse(tmx, events=['end'])
+    tus = (el for event, el in context if el.tag == 'tu')
+    langs = set()
+    count = 0
+    for tu in tus:
+        for tuv in tu.findall('tuv'):
+            langs = langs.union(set(v for k, v in tuv.attrib.items() if k.endswith('lang')))
+        count += 1
+        if count == 30:
+            break
+    return set(normalize_language_code(c) for c in langs)
+
 def load_files(corpora : List[Corpus]):
     to_download = []
     remaining = [c for c in corpora if c and c.rejected is None]
     for corpus in remaining:
         f = str(corpus.number) + ".zip"
+        corpus.tmx_languages = {}
         try:
             with zipfile.ZipFile(f, 'r') as zipped:
                 names = zipped.namelist()
+                for n in names:
+                    if n.endswith(".tmx") and not n.startswith("__MACOSX"):
+                        with zipped.open(n) as tmx:
+                            corpus.tmx_languages[n] = sense_tmx_languages(tmx)
             names = [n for n in names if keep_file(n)]
             corpus.files = names
             # Hopefully we didn't delete everything!
@@ -384,6 +422,8 @@ def load_files(corpora : List[Corpus]):
             to_download.append(corpus)
         except zipfile.BadZipFile:
             print(f"File {f} from {corpus.download} is not a zip file.  Most likely this means the corpus has an open license but ELRC put a click wrap on it for no reason.  Consider adding it to the list of licenses in REQUIRES_POST in the source of this script.", file=sys.stderr)
+        except ElementTree.ParseError as e:
+            corpus.reject(f"Contains a bad TMX file {e}")
     return to_download
 
 def hotfix_files(corpora):
@@ -395,6 +435,19 @@ def hotfix_files(corpora):
         corpora[index].files = [f for f in corpora[index].files if not f.endswith(".txt")]
     # Incorrect language code se, should be sv.  Sorry Sweden, Tilde messed up the metadata for your corpus!  I notified Tilde.
     corpora[417].files = [f for f in corpora[417].files if not f.endswith("-se.tmx")]
+    remaining = [c for c in corpora if c and c.rejected is None]
+    for corpus in remaining:
+        tmxes = [f for f in corpus.files if f.endswith(".tmx")]
+        found_languages = set()
+        for tmx in tmxes:
+            if not corpus.tmx_languages[tmx].issubset(corpus.languages):
+                print(f"Corpus {corpus.number} contains file {tmx} with languages {corpus.tmx_languages[tmx]} that are not in metadata languages {corpus.languages}.  Patching metadata.", file=sys.stderr)
+            found_languages = found_languages.union(corpus.tmx_languages[tmx])
+        missing = corpus.languages.difference(found_languages)
+        if len(missing):
+            print(f"Corpus {corpus.number} advertised {missing} that do not appear in the TMXes. Patching metadata.", file=sys.stderr)
+        corpus.languages = found_languages
+
 
 def entry_template(corpus : Corpus, inpaths : List[str], shortname = None, languages = None):
     if languages is None:
@@ -411,26 +464,17 @@ def entry_template(corpus : Corpus, inpaths : List[str], shortname = None, langu
         post = ""
     return '\t'.join([langs[0], langs[1], str(corpus.number), shortname, corpus.name.replace("\t", ' '), corpus.info_url, corpus.download, post, ' '.join(corpus.licenses)] + inpaths)
 
-def parse_language(filename, languages):
+def parse_language_from_filename(filename, languages):
     filename = filename.replace("en-GB", "en").replace("de-DE", "de").replace("fr-FR", "fr").replace("it-IT", "it").replace("es-ES", "es").replace("pt-PT", "pt")
     split = re.split('[/_. -]', filename)
     if len(split) < 2:
-        raise Exception("Not sure how to parse filename " + filename)
-    map639 = {
-        "eng" : "en",
-        "bul" : "bg",
-        "lav" : "lv",
-        "ell" : "el",
-        "pol" : "pl",
-        "ron" : "ro",
-        "fra" : "fr",
-    }
+        return None
     for i in range(len(split) - 1):
         if split[i] in languages and split[i+1] in languages:
             return (split[i], split[i+1])
-        if split[i] in map639.keys() and split[i+1] in map639.keys() and map639[split[i]] in languages and map639[split[i+1]] in languages:
-            return (split[i], split[i+1])
-    raise Exception("Could not parse languages out of file name " + filename)
+        if split[i] in MAP639.keys() and split[i+1] in MAP639.keys() and MAP639[split[i]] in languages and MAP639[split[i+1]] in languages:
+            return (MAP639[split[i]], MAP639[split[i+1]])
+    return None
 
 def create_records(corpora: List[Corpus]):
     remaining = [c for c in corpora if c and c.rejected is None]
@@ -462,7 +506,14 @@ def create_records(corpora: List[Corpus]):
             # Multilingual with separate TMXes.  Parse filenames into language codes and gather by language code.
             pairs = {}
             for f in corpus.files:
-                pair = parse_language(f, corpus.languages)
+                from_name = parse_language_from_filename(f, corpus.languages)
+                if from_name and set(from_name) != corpus.tmx_languages[f]:
+                    print(f"TMX languages {corpus.tmx_languages[f]} do not match filename {pair} in corpus {corpus.number}", file=sys.stderr)
+                pair = corpus.tmx_languages[f]
+                # Alas set is not hashable.
+                pair = list(pair)
+                pair.sort()
+                pair = tuple(pair)
                 if pair in pairs:
                     pairs[pair].append(f)
                 else:

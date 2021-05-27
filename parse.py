@@ -265,7 +265,6 @@ def hotfix_metadata(corpora):
         2390, #Croatian-English translation memory from the Ministry of Agriculture (Part 2) (Processed)
     ]:
         corpora[extra_part].reject("Part of a larger corpus but not labeled as such")
-    
     corpora[1834].reject("test XML")
     corpora[2654].reject("post-editing training data")
     corpora[4244].reject("Download broken")
@@ -428,9 +427,6 @@ def load_files(corpora : List[Corpus]):
     return to_download
 
 def hotfix_files(corpora):
-    # TMX file fixes: Same TMX in file with two different names
-    assert '335-1254.es-pt.tmx' in corpora[1254].files
-    corpora[1254].files = ['335-1254.es-pt.tmx']
     # Extra text files alongside tmx
     for index in [1796, 1797]:
         corpora[index].files = [f for f in corpora[index].files if not f.endswith(".txt")]

@@ -265,6 +265,7 @@ def hotfix_metadata(corpora):
         2390, #Croatian-English translation memory from the Ministry of Agriculture (Part 2) (Processed)
     ]:
         corpora[extra_part].reject("Part of a larger corpus but not labeled as such")
+    corpora[1091].reject("Khresmoi is in mtdata directly from lindat instead of the ELRC version that only pairs with English")
     corpora[1834].reject("test XML")
     corpora[2654].reject("post-editing training data")
     corpora[4244].reject("Download broken")

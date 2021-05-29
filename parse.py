@@ -272,7 +272,6 @@ def hotfix_metadata(corpora):
     corpora[2606].reject("XLIFF format; TMX is supposed to be available as 2610 but that is not available for download yet and the corpus is too small to bother with an XLIFF parser")
     corpora[2483].reject("Unaligned text file")
     corpora[3860].reject("Available in another format as 3859")
-    corpora[1133].reject("Actually contains an English-Finnish corpus that duplicates corpus 1127")
     for i in [3858, 3859, 3860, 3861, 3862, 3864]:
         corpora[i].reject("Same download location as EMEA.")
     corpora[3836].reject("TODO: extract from this non-standard format")
@@ -506,6 +505,7 @@ def create_records(corpora: List[Corpus]):
         elif len(corpus.files) == 1 and corpus.files[0].endswith(".tmx") and len(corpus.languages) > 2:
             # There are 3 multi-lingual corpora that use a single TMX.
             langs = list(corpus.languages)
+            langs.sort()
             for i, l1 in enumerate(langs):
                 for l2 in langs[i+1:]:
                     yield entry_template(corpus, corpus.files, languages = (l1,l2))

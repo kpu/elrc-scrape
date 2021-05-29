@@ -118,7 +118,7 @@ class Corpus:
         print(f"Reject {self.number}: {self.rejected}: {self.name}", file=sys.stderr)
 
     # These are very open licenses with attribution that stupidly require a post.
-    REQUIRES_POST=set(["NLOD-1.0", "Apache-2.0"])
+    REQUIRES_POST=set(["Apache-2.0"])
 
     def parse_and_reject(self):
         if already_on_opus(self.name):
@@ -468,11 +468,12 @@ def entry_template(corpus : Corpus, inpaths : List[str], shortname = None, langu
     assert len(languages) == 2
     langs = list(languages)
     langs.sort()
-    if corpus.post:
-        post = corpus.post
-    else:
-        post = ""
-    return '\t'.join([langs[0], langs[1], str(corpus.number), shortname, corpus.name.replace("\t", ' '), corpus.info_url, corpus.download, post, ' '.join(corpus.licenses)] + inpaths)
+    # Currently post is not required for anything
+#    if corpus.post:
+#        post = corpus.post
+#    else:
+#        post = ""
+    return '\t'.join([langs[0], langs[1], str(corpus.number), shortname, corpus.name.replace("\t", ' '), corpus.info_url, corpus.download, ' '.join(corpus.licenses)] + inpaths)
 
 def parse_language_from_filename(filename, languages):
     filename = filename.replace("en-GB", "en").replace("de-DE", "de").replace("fr-FR", "fr").replace("it-IT", "it").replace("es-ES", "es").replace("pt-PT", "pt")

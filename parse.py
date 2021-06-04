@@ -303,11 +303,8 @@ def hotfix_metadata(corpora):
         for v in combined:
             corpora[v].shortname = name
 
-    for i in [798,799,477,485]:
-        corpora[i].reject("TMX has Polish labeled as English and English labeled as Polish.  Notified ELRC.")
     corpora[948].reject("Too much Greek copied to target")
     corpora[835].reject("Poor quality")
-    corpora[403].reject("Poor quality, incomplete sentences")
     for i in [784, 801, 804, 807, 816, 805, 806, 808, 846, 863]:
         corpora[i].reject("Text was inserted into the TMX without escaping and therefore the TMX is not well-formed; notified ELRC")
     corpora[1973].reject("The XML standard forbids character entity &#5; https://www.w3.org/TR/xml/#charsets This entity appears at line 61972, column 211")

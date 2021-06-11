@@ -82,6 +82,7 @@ class Corpus:
         self.aligned_annotated = []
         self.part_of = []
         self.has_part = []
+        self.is_aligned_version_of = []
         for relation in possibly_empty_list(json_data["resourceInfo"], "relationInfo"):
             relation_type = relation["relationType"]
             relation_with = relation["relatedResource"]["targetResourceNameURI"]
@@ -103,6 +104,8 @@ class Corpus:
                 self.part_of.append(relation_with)
             elif relation_type == "hasPart":
                 self.has_part.append(relation_with)
+            elif relation_type == "isAlignedVersionOf":
+                self.is_aligned_version_of.append(relation_with)
         self.rejected = None
         self.parse_and_reject()
 
@@ -164,7 +167,7 @@ class Corpus:
         self.languages = set()
         for info in j["resourceInfo"]["resourceComponentType"]["corpusInfo"]["corpusMediaType"]["corpusTextInfo"]:
            for l in info["languageInfo"]:
-               self.languages.add(l["languageId"])
+               self.languages.add(l["languageId"].split('-')[0])
            linguality = info['lingualityInfo']['lingualityType']
            self.linguality.add(linguality)
            if linguality == "multilingual" and 'multilingualityType' in info['lingualityInfo'] and info['lingualityInfo']['multilingualityType'] in ['other', 'comparable']:
@@ -206,6 +209,9 @@ def load_metadata():
     # Go through version relationships.  If one of the versions is "(Processed)", prefer that.
     for corpus in remaining:
         for version in corpus.versions:
+            if corpora[version] is None:
+                print(f"Version reference from {corpus.number} to {version} is broken.", file=sys.stderr)
+                continue
             if corpora[version].processed_name or corpus.processed_name:
                 if corpora[version].processed_name and corpus.processed_name:
                     raise Exception(f"Two corpora claim to be processed with a version relation: {corpus.number} {version}")
@@ -224,7 +230,7 @@ def load_metadata():
     remaining = [c for c in remaining if c.rejected is None]
 
     for corpus in remaining:
-       alive_versions = [v for v in corpus.versions if not corpora[v].rejected]
+       alive_versions = [v for v in corpus.versions if corpora[v] and corpora[v].rejected is None]
        if len(alive_versions) != 0:
            print(f"Version information for {corpus.number} \"" + corpus.name + "\" suggests there are other versions:", file=sys.stderr)
            for version in alive_versions:
@@ -266,20 +272,23 @@ def hotfix_metadata(corpora):
     ]:
         corpora[extra_part].reject("Part of a larger corpus but not labeled as such")
     corpora[1091].reject("Khresmoi is in mtdata directly from lindat instead of the ELRC version that only pairs with English")
-    corpora[1834].reject("test XML")
+    if corpora[1834]:
+        corpora[1834].reject("test XML")
     corpora[2654].reject("post-editing training data")
     corpora[4244].reject("Download broken")
     corpora[2606].reject("XLIFF format; TMX is supposed to be available as 2610 but that is not available for download yet and the corpus is too small to bother with an XLIFF parser")
     corpora[2483].reject("Unaligned text file")
-    corpora[3860].reject("Available in another format as 3859")
     for i in [3858, 3859, 3860, 3861, 3862, 3864]:
-        corpora[i].reject("Same download location as EMEA.")
+        if corpora[i]:
+            corpora[i].reject("Same download location as EMEA.")
     corpora[3836].reject("TODO: extract from this non-standard format")
+    corpora[3969].reject("TODO: can't be bothered to parse a non-standard format for 563 sentence pairs")
     corpora[2646].reject("TODO: nested zip files, ugh")
     corpora[3081].reject("sh language code causes conflict with other part of data set https://en.wikipedia.org/wiki/Serbo-Croatian#ISO_classification")
     #Multilingual corpus in HEALTH (COVID-19) domain part_1a (v.1.0) when Multilingual corpus in HEALTH (COVID-19) domain part_1a (v.1.05) exists
     for old_health in [3858, 3861, 3862, 3863, 3866, 3867, 3870, 3872]:
-        corpora[old_health].reject("Old version")
+        if corpora[old_health]:
+            corpora[old_health].reject("Old version")
     
     # Have TMX in a language but not in the metadata
     corpora[416].languages.add("sr")
@@ -290,8 +299,6 @@ def hotfix_metadata(corpora):
         (3192, 'antibiotic'),
         (2682, 'EMEA'),
         (3550, 'presscorner_covid'),
-        (1134, 'EUIPO_2017'),
-        (704, 'EUIPO_list'),
         (2865, 'EU_publications_medical_v2'),
         (3549, "EUR_LEX_covid"),
         (3448, "EC_EUROPA_covid"),
@@ -299,11 +306,20 @@ def hotfix_metadata(corpora):
         (2922, "wikipedia_health"),
         (2730, "vaccination"),
     ]:
+        if not corpora[parent]:
+            print(name)
         combined = corpora[parent].versions + corpora[parent].aligned_annotated + corpora[parent].has_part
         for v in combined:
             corpora[v].shortname = name
+    # Multilingual corpus is a hidden json
+    for c in corpora:
+        if c and c.is_aligned_version_of == [1134]:
+            c.shortname = "EUIPO_2017"
+        if c and c.part_of == [704]:
+            c.shortname = "EUIPO_list"
 
-    corpora[948].reject("Too much Greek copied to target")
+
+    #corpora[948].reject("Too much Greek copied to target")
     corpora[835].reject("Poor quality")
     for i in [784, 801, 804, 807, 816, 805, 806, 808, 846, 863]:
         corpora[i].reject("Text was inserted into the TMX without escaping and therefore the TMX is not well-formed; notified ELRC")
@@ -373,7 +389,7 @@ def keep_file(n : str):
     if n.endswith("ReadMe.txt"):
         return False
     # Validation reports were supposed to be uploaded separately.
-    if n == 'ELRC_474_Natolin European Centre Dataset (Processed)_VALREP.pdf':
+    if n == 'ELRC_474_Natolin European Centre Dataset (Processed)_VALREP.pdf' or n == "statistics.csv":
         return False
     return True
 
@@ -438,8 +454,6 @@ def hotfix_files(corpora):
     # Extra text files alongside tmx
     for index in [1796, 1797]:
         corpora[index].files = [f for f in corpora[index].files if not f.endswith(".txt")]
-    # Incorrect language code se, should be sv.  Sorry Sweden, Tilde messed up the metadata for your corpus!  I notified Tilde.
-    corpora[417].files = [f for f in corpora[417].files if not f.endswith("-se.tmx")]
     remaining = [c for c in corpora if c and c.rejected is None]
     for corpus in remaining:
         tmxes = [f for f in corpus.files if f.endswith(".tmx")]

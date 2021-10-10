@@ -90,10 +90,38 @@ class Corpus:
                 relation_with = int(relation_with)
             except ValueError as e:
                 # WTF
-                if relation_with == 'MARCELL Croatian legislative subcorpus':
-                    relation_with = 2645
-                else:
-                    raise e
+                if relation_with == "https://www.nb.no/sbfil/tekst/20150601_ud.tar.gz":
+                    continue
+                relation_hotfix = {
+                    'MARCELL Croatian legislative subcorpus' : 2645,
+                    'PRINCIPLE Ciklopea Croatian-English Parallel Corpus of Railway Procurement Documents' : 4289,
+                    'PRINCIPLE SDURDD Croatian-English Procurement Parallel Corpus' : 4369,
+                    'PRINCIPLE DKOM Croatian-English Parallel Corpus of Directives of the European Parliament and of the Council': 4291,
+                    'PRINCIPLE Central Public Procurement Office of Republic of Croatia Croatian-English Procurement Parallel Corpus' : 4292,
+                    'PRINCIPLE Ciklopea Croatian-English Parallel Corpus of Manuals for Medical Devices' : 4313,
+                    'Foras na Gaeilge parallel translation memory dataset (evaluated)' : 4320,
+                    'Foras na Gaeilge parallel translation memory dataset' : 4326,
+                    'Dept of Justice parallel English-Irish secondary legislation (evaluated)' : 4328,
+                    'Dept of Justice parallel English-Irish secondary legislation' : 4321,
+                    'PRINCIPLE MVEP Croatian-English Parallel Corpus of legal documents' : 4329,
+                    'PRINCIPLE MVEP Croatian-English-German Glossary of Legal Terms' : 4315,
+                    'PRINCIPLE An tAonad Aistriúcháin agus Ateangaireachta ÓEG/NUIG Translation Unit dataset' : 4339,
+                    'PRINCIPLE English-Irish parallel primary legislation 1960 to 1989' : 4341,
+                    "PRINCIPLE English-Irish parallel primary legislation 1990 to 2019" : 4345,
+                    'PRINCIPLE English-Irish parallel secondary legislation' : 4340,
+                    "PRINCIPLE English-Irish Houses of the Oireachtas ancillary material dataset" : 4342,
+                    'PRINCIPLE English-Irish glossary of terms relating to primary legislation in Ireland' : 4354,
+                    'PRINCIPLE English-Irish Annual Reports from the Houses of the Oireachtas' : 4344,
+                    'https://elrc-share.eu/repository/browse/translation-memory-from-standards-norway/15e913c2c8f711eb9c1a00155d026706360ec3dab20847439f88dbe61662980c/' : 4349,
+                    'https://elrc-share.eu/repository/browse/translation-memories-from-the-mfa-2020/15e913c4c8f711eb9c1a00155d026706224b3bc86b2c4e2eaa7a794367e171e8/' : 4351,
+                    'https://elrc-share.eu/repository/browse/translation-memories-from-the-ministry-of-foreign-affairs-of-norway/7c20eaf50a6d11e7bfe700155d020502df3a09319a164b74bb5c70bce85de0a9/' : 305,
+                    'The Icelandic Met Office - Weather forecasts and warnings' : 4325,
+                    'Icelandic Standards - TM and Lexicon 2020' : 4335,
+                    'The Translation Centre of the Icelandic Ministry for Foreign Affairs – Gullsarpur' : 4318,
+                    'The Translation Centre of the Icelandic Ministry for Foreign Affairs – eProcurement' : 4317,
+                    "https://elrc-share.eu/repository/browse/hrenwac-croatian-english-parallel-corpus/3417cfdabbf211eb9c1a00155d026706a6ca797b6ac84074b09ae00bf29b53a8/" : 4294,
+                }
+                relation_with = relation_hotfix[relation_with]
             # If they aligned it for us, don't bother.
             if relation_type in ["hasAlignedVersion", "hasAnnotatedVersion", "hasConvertedVersion"]:
                 self.aligned_annotated.append(relation_with)
@@ -326,6 +354,14 @@ def hotfix_metadata(corpora):
     corpora[1973].reject("The XML standard forbids character entity &#5; https://www.w3.org/TR/xml/#charsets This entity appears at line 61972, column 211")
     corpora[1077].reject("The XML standard forbids character entity &#21; https://www.w3.org/TR/xml/#charsets This entity appears at line 1122323, column 13")
     corpora[2580].reject("TODO: UTF16 encoded TMX")
+    corpora[4363].reject("Corpus cleaning training data")
+    for i in [4289, 4290, 4291, 4292, 4293, 4312, 4316, 4321, 4328, 4330, 4332, 4340, 4341, 4342, 4344, 4345, 4346, 4352, 4353, 4369, 4598, 4599, 4600, 4601, 4604]:
+        corpora[i].reject("PRINCIPLE doesn't build TMX")
+    for i in [4325]:
+        corpora[i].reject("ZIP within a ZIP")
+    corpora[4609].reject("tarball within a zip")
+    for i in [4405, 4406, 4407, 4408, 4409, 4410, 4411, 4412, 4413, 4414, 4415, 4416, 4417, 4418, 4419, 4420, 4421, 4422, 4423, 4424, 4425, 4426, 4427, 4428, 4429, 4430, 4431, 4432, 4433, 4434, 4435, 4436, 4437, 4438, 4439, 4440, 4441, 4442, 4443, 4444, 4445, 4446, 4447, 4448, 4449, 4450, 4451, 4452, 4453, 4454, 4455, 4456, 4457, 4458, 4459, 4460, 4461, 4462, 4463, 4464, 4465, 4466, 4467, 4468, 4469, 4470, 4471, 4472, 4473, 4474, 4475, 4476, 4477, 4478, 4479, 4480, 4481, 4482, 4483, 4484, 4485, 4523, 4524, 4525, 4526, 4527, 4528, 4529, 4530, 4531, 4532, 4533, 4534, 4535, 4536, 4537, 4538, 4539, 4540, 4541, 4542, 4543, 4544, 4545, 4546, 4547, 4548, 4549, 4550, 4551, 4552, 4553, 4554, 4555, 4556, 4557, 4558, 4559, 4560, 4561, 4562, 4563, 4564, 4565, 4566, 4567, 4568, 4569, 4570, 4571, 4572, 4573, 4574, 4575, 4576, 4577, 4578, 4579, 4580, 4581, 4582, 4583, 4584, 4585, 4586, 4587, 4588, 4589, 4590, 4591, 4592, 4593, 4594, 4595, 4596, 4597]:
+        corpora[i].reject("NTEU's TMX files are missing TU tags.")
 
     corpora[416].shortname = "Swedish_Social_Security"
     corpora[417].shortname = "Swedish_Work_Environment"
@@ -446,6 +482,7 @@ def load_files(corpora : List[Corpus]):
             to_download.append(corpus)
         except zipfile.BadZipFile:
             print(f"File {f} from {corpus.download} is not a zip file.  Most likely this means the corpus has an open license but ELRC put a click wrap on it for no reason.  Consider adding it to the list of licenses in REQUIRES_POST in the source of this script.", file=sys.stderr)
+            corpus.reject(f"Not a ZIP file: {corpus}")
         except ElementTree.ParseError as e:
             corpus.reject(f"Contains a bad TMX file {e}")
     return to_download
@@ -475,7 +512,8 @@ def entry_template(corpus : Corpus, inpaths : List[str], shortname = None, langu
         if corpus.shortname is None:
             raise Exception(f"Need to assign a shortname for {corpus.number} {corpus.name}")
         shortname = corpus.shortname
-    assert len(languages) == 2
+    if len(languages) != 2:
+        raise Exception(f"Should be 2 languages not {languages} for {corpus.number} {corpus.name}")
     langs = list(languages)
     langs.sort()
     # Currently post is not required for anything
@@ -527,19 +565,21 @@ def create_records(corpora: List[Corpus]):
         elif len(corpus.languages) > 2 and len(tmxes) > 1:
             # Multilingual with separate TMXes.  Parse filenames into language codes and gather by language code.
             pairs = {}
-            for f in corpus.files:
+            for f in tmxes:
                 from_name = parse_language_from_filename(f, corpus.languages)
                 if from_name and set(from_name) != corpus.tmx_languages[f]:
                     print(f"TMX languages {corpus.tmx_languages[f]} do not match filename {pair} in corpus {corpus.number}", file=sys.stderr)
-                pair = corpus.tmx_languages[f]
+                langs = corpus.tmx_languages[f]
                 # Alas set is not hashable.
-                pair = list(pair)
-                pair.sort()
-                pair = tuple(pair)
-                if pair in pairs:
-                    pairs[pair].append(f)
-                else:
-                    pairs[pair] = [f]
+                langs = list(langs)
+                langs.sort()
+                for i, l1 in enumerate(langs):
+                    for l2 in langs[i+1:]:
+                        pair = (l1, l2)
+                        if pair in pairs:
+                            pairs[pair].append(f)
+                        else:
+                            pairs[pair] = [f]
             for pair, files in pairs.items():
                 yield entry_template(corpus, files, languages = pair)
         else:

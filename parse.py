@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # A voodoo interpreter of ELRC-SHARE.
-# ELRC metadata is sequentially numbered.  5000 is higher than their maximum when this was written.
-NUM_MAX=5000
+# ELRC metadata is sequentially numbered.  6000 is higher than their maximum when this was written.
+NUM_MAX=6000
 import json
 import os
 import re
@@ -303,7 +303,6 @@ def hotfix_metadata(corpora):
     if corpora[1834]:
         corpora[1834].reject("test XML")
     corpora[2654].reject("post-editing training data")
-    corpora[4244].reject("Download broken")
     corpora[2606].reject("XLIFF format; TMX is supposed to be available as 2610 but that is not available for download yet and the corpus is too small to bother with an XLIFF parser")
     corpora[2483].reject("Unaligned text file")
     for i in [3858, 3859, 3860, 3861, 3862, 3864]:
@@ -362,6 +361,11 @@ def hotfix_metadata(corpora):
     corpora[4609].reject("tarball within a zip")
     for i in [4405, 4406, 4407, 4408, 4409, 4410, 4411, 4412, 4413, 4414, 4415, 4416, 4417, 4418, 4419, 4420, 4421, 4422, 4423, 4424, 4425, 4426, 4427, 4428, 4429, 4430, 4431, 4432, 4433, 4434, 4435, 4436, 4437, 4438, 4439, 4440, 4441, 4442, 4443, 4444, 4445, 4446, 4447, 4448, 4449, 4450, 4451, 4452, 4453, 4454, 4455, 4456, 4457, 4458, 4459, 4460, 4461, 4462, 4463, 4464, 4465, 4466, 4467, 4468, 4469, 4470, 4471, 4472, 4473, 4474, 4475, 4476, 4477, 4478, 4479, 4480, 4481, 4482, 4483, 4484, 4485, 4523, 4524, 4525, 4526, 4527, 4528, 4529, 4530, 4531, 4532, 4533, 4534, 4535, 4536, 4537, 4538, 4539, 4540, 4541, 4542, 4543, 4544, 4545, 4546, 4547, 4548, 4549, 4550, 4551, 4552, 4553, 4554, 4555, 4556, 4557, 4558, 4559, 4560, 4561, 4562, 4563, 4564, 4565, 4566, 4567, 4568, 4569, 4570, 4571, 4572, 4573, 4574, 4575, 4576, 4577, 4578, 4579, 4580, 4581, 4582, 4583, 4584, 4585, 4586, 4587, 4588, 4589, 4590, 4591, 4592, 4593, 4594, 4595, 4596, 4597]:
         corpora[i].reject("NTEU's TMX files are missing TU tags.")
+    corpora[4296].reject("Ubuntu from OPUS")
+    corpora[4297].reject("Already have EAC directly in MTData")
+    corpora[4319].reject("Already have EAC directly in MTData")
+    corpora[4336].reject("Already have Tilde Model directly in MTData")
+    corpora[4337].reject("Already have Tilde Model directly in MTData")
 
     corpora[416].shortname = "Swedish_Social_Security"
     corpora[417].shortname = "Swedish_Work_Environment"

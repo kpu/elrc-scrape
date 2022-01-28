@@ -19,6 +19,8 @@ def already_on_opus(name):
         return True
     if "ParaCrawl " in name:
         return True
+    if "hrenWaC" in name:
+        return True
     if name.startswith("Europat") or name.startswith("EuroPat"):
         return True
     return False
@@ -337,7 +339,8 @@ def hotfix_metadata(corpora):
             print(name)
         combined = corpora[parent].versions + corpora[parent].aligned_annotated + corpora[parent].has_part
         for v in combined:
-            corpora[v].shortname = name
+            if corpora[v]:
+                corpora[v].shortname = name
     # Multilingual corpus is a hidden json
     for c in corpora:
         if c and c.is_aligned_version_of == [1134]:
@@ -366,6 +369,8 @@ def hotfix_metadata(corpora):
     corpora[4319].reject("Already have EAC directly in MTData")
     corpora[4336].reject("Already have Tilde Model directly in MTData")
     corpora[4337].reject("Already have Tilde Model directly in MTData")
+    corpora[4370].reject("xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 11851, column 230")
+    corpora[4608].reject("xml.etree.ElementTree.ParseError: reference to invalid character number: line 184950, column 84")
 
     corpora[416].shortname = "Swedish_Social_Security"
     corpora[417].shortname = "Swedish_Work_Environment"
@@ -446,7 +451,8 @@ MAP639 = {
 }
 
 def normalize_language_code(code):
-    code = code.split('-')[0].lower()
+#    code = code.split('-')[0].lower()
+    code = code.lower()
     if code in MAP639:
         code = MAP639[code]
     return code
@@ -507,7 +513,6 @@ def hotfix_files(corpora):
         if len(missing):
             print(f"Corpus {corpus.number} advertised {missing} that do not appear in the TMXes. Patching metadata.", file=sys.stderr)
         corpus.languages = found_languages
-
 
 def entry_template(corpus : Corpus, inpaths : List[str], shortname = None, languages = None):
     if languages is None:

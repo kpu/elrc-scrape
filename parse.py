@@ -351,10 +351,10 @@ def hotfix_metadata(corpora):
 
     #corpora[948].reject("Too much Greek copied to target")
     corpora[835].reject("Poor quality")
-    for i in [784, 801, 804, 807, 816, 805, 806, 808, 846, 863]:
+    for i in [806, 808]:
         corpora[i].reject("Text was inserted into the TMX without escaping and therefore the TMX is not well-formed; notified ELRC")
-    corpora[1973].reject("The XML standard forbids character entity &#5; https://www.w3.org/TR/xml/#charsets This entity appears at line 61972, column 211")
-    corpora[1077].reject("The XML standard forbids character entity &#21; https://www.w3.org/TR/xml/#charsets This entity appears at line 1122323, column 13")
+#    corpora[1973].reject("The XML standard forbids character entity &#5; https://www.w3.org/TR/xml/#charsets This entity appears at line 61972, column 211")
+#    corpora[1077].reject("The XML standard forbids character entity &#21; https://www.w3.org/TR/xml/#charsets This entity appears at line 1122323, column 13")
     corpora[2580].reject("TODO: UTF16 encoded TMX")
     corpora[4363].reject("Corpus cleaning training data")
     for i in [4289, 4290, 4291, 4292, 4293, 4312, 4316, 4321, 4328, 4330, 4332, 4340, 4341, 4342, 4344, 4345, 4346, 4352, 4353, 4369, 4598, 4599, 4600, 4601, 4604]:

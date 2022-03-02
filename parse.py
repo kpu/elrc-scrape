@@ -92,7 +92,7 @@ class Corpus:
                 relation_with = int(relation_with)
             except ValueError as e:
                 # WTF
-                if relation_with == "https://www.nb.no/sbfil/tekst/20150601_ud.tar.gz":
+                if relation_with == "https://www.nb.no/sbfil/tekst/20150601_ud.tar.gz" or relation_with == "https://github.com/CrossLangNV/public-data/releases/tag/v0.1-alpha":
                     continue
                 relation_hotfix = {
                     'MARCELL Croatian legislative subcorpus' : 2645,
@@ -353,8 +353,8 @@ def hotfix_metadata(corpora):
     corpora[835].reject("Poor quality")
     for i in [806, 808]:
         corpora[i].reject("Text was inserted into the TMX without escaping and therefore the TMX is not well-formed; notified ELRC")
-#    corpora[1973].reject("The XML standard forbids character entity &#5; https://www.w3.org/TR/xml/#charsets This entity appears at line 61972, column 211")
-#    corpora[1077].reject("The XML standard forbids character entity &#21; https://www.w3.org/TR/xml/#charsets This entity appears at line 1122323, column 13")
+    for i in [5147, 5152, 5152, 5152, 5155, 5156, 5157, 5158, 5158, 5158, 5158, 5158, 5158, 5158]:
+        corpora[i].reject("Synthethic corpus")
     corpora[2580].reject("TODO: UTF16 encoded TMX")
     corpora[4363].reject("Corpus cleaning training data")
     for i in [4289, 4290, 4291, 4292, 4293, 4312, 4316, 4321, 4328, 4330, 4332, 4340, 4341, 4342, 4344, 4345, 4346, 4352, 4353, 4369, 4598, 4599, 4600, 4601, 4604]:
@@ -413,6 +413,11 @@ def hotfix_metadata(corpora):
     # Ugh names differed by a .  Asked, they said they think it is two different parts due to ELRI limitations.
     for c in [2425, 2613, 2615, 2617, 2624, 2625, 2640, 2642]:
         corpora[c].shortname += "_Part2"
+    # Three corpora with the same title but different content!
+    for c in [5137, 5138, 5141, 5142, 5143]:
+        corpora[c].shortname += "_" + str(c)
+    # To keep things exciting, ELRI also duplicated metadata and content for one of the corpora.
+    corpora[5151].reject("Duplicate of 5060")
 
 
 # What files to keep in zip, mostly for sanity checking that we have everything.
@@ -602,7 +607,7 @@ try:
     corpora = load_metadata()
 except FileNotFoundError:
     print("# Download all the JSON files first:")
-    print("for ((i=0;i<5000;++i)); do if [ ! -s $i.json ]; then echo wget -O $i.json https://www.elrc-share.eu/repository/export_json/$i/; fi; done |parallel")
+    print("for ((i=0;i<6000;++i)); do if [ ! -s $i.json ]; then echo wget -O $i.json https://www.elrc-share.eu/repository/export_json/$i/; fi; done |parallel")
     sys.exit(1)
 hotfix_metadata(corpora)
 to_download = load_files(corpora)

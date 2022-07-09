@@ -92,9 +92,10 @@ class Corpus:
                 relation_with = int(relation_with)
             except ValueError as e:
                 # WTF
-                if relation_with == "https://www.nb.no/sbfil/tekst/20150601_ud.tar.gz" or relation_with == "https://github.com/CrossLangNV/public-data/releases/tag/v0.1-alpha":
+                if relation_with == "https://www.nb.no/sbfil/tekst/20150601_ud.tar.gz" or relation_with == "https://github.com/CrossLangNV/public-data/releases/tag/v0.1-alpha" or relation_with == 'MaCoCu data release 1':
                     continue
                 relation_hotfix = {
+                    'https://www.elrc-share.eu/repository/browse/descripciones-de-vulnerabilidades-de-la-bbdd-nvd/9dd01c02cfcc11e9913100155d02670670070560807f458f8e50bd5273778d7a/' : 2503,
                     'MARCELL Croatian legislative subcorpus' : 2645,
                     'PRINCIPLE Ciklopea Croatian-English Parallel Corpus of Railway Procurement Documents' : 4289,
                     'PRINCIPLE SDURDD Croatian-English Procurement Parallel Corpus' : 4369,
@@ -353,6 +354,8 @@ def hotfix_metadata(corpora):
     corpora[835].reject("Poor quality")
     for i in [806, 808]:
         corpora[i].reject("Text was inserted into the TMX without escaping and therefore the TMX is not well-formed; notified ELRC")
+    for i in [3879, 3880, 3881, 3882, 3883, 3885, 3886, 3887, 3889, 3890]:
+        corpora[i].reject("not well-formed (invalid token)")
     for i in [5147, 5152, 5152, 5152, 5155, 5156, 5157, 5158, 5158, 5158, 5158, 5158, 5158, 5158]:
         corpora[i].reject("Synthethic corpus")
     corpora[2580].reject("TODO: UTF16 encoded TMX")
@@ -371,6 +374,7 @@ def hotfix_metadata(corpora):
     corpora[4337].reject("Already have Tilde Model directly in MTData")
     corpora[4370].reject("xml.etree.ElementTree.ParseError: not well-formed (invalid token): line 11851, column 230")
     corpora[4608].reject("xml.etree.ElementTree.ParseError: reference to invalid character number: line 184950, column 84")
+    corpora[5188].reject("Non-standard names for text files.")
 
     corpora[416].shortname = "Swedish_Social_Security"
     corpora[417].shortname = "Swedish_Work_Environment"
@@ -380,6 +384,10 @@ def hotfix_metadata(corpora):
     for corpus in corpora:
         if corpus and corpus.name.startswith("Compilation of ") and corpus.name.endswith(" parallel corpora resources used for training of NTEU Machine Translation engines."):
             corpus.shortname = 'NTEU'
+    for corpus in corpora:
+        if corpus and corpus.name.startswith("SciPar: "):
+            corpus.shortname = 'SciPar'
+    corpora[5183].shortname = "SciPar_Ukraine"
     corpora[422].shortname = 'Portuguese_legislation'
     corpora[471].shortname = 'Bugarian_Revenue'
     corpora[492].shortname = 'Romanian_Wikipedia'
@@ -416,8 +424,8 @@ def hotfix_metadata(corpora):
     # Three corpora with the same title but different content!
     for c in [5137, 5138, 5141, 5142, 5143]:
         corpora[c].shortname += "_" + str(c)
-    # To keep things exciting, ELRI also duplicated metadata and content for one of the corpora.
-    corpora[5151].reject("Duplicate of 5060")
+    corpora[5160].shortname = "Press_Releases_PIO_2021_2022"
+    corpora[5173].shortname = "CLARIN_Polish_Ukrainian"
 
 
 # What files to keep in zip, mostly for sanity checking that we have everything.
@@ -506,6 +514,9 @@ def hotfix_files(corpora):
     # Extra text files alongside tmx
     for index in [1796, 1797]:
         corpora[index].files = [f for f in corpora[index].files if not f.endswith(".txt")]
+    corpora[4992].languages = set(['no', 'es', 'de', 'en']) #Metadata says nb, file suffix says no.
+    corpora[4996].languages = set(['no', 'en']) #Metadata says nb, file suffix says no.
+    corpora[5129].files = ['gencata/gene_crawling_ca-en.ca', 'gencata/gene_crawling_ca-en.en'] #Ignore readme and urls
     remaining = [c for c in corpora if c and c.rejected is None]
     for corpus in remaining:
         tmxes = [f for f in corpus.files if f.endswith(".tmx")]
@@ -515,8 +526,11 @@ def hotfix_files(corpora):
                 print(f"Corpus {corpus.number} contains file {tmx} with languages {corpus.tmx_languages[tmx]} that are not in metadata languages {corpus.languages}.  Patching metadata.", file=sys.stderr)
             found_languages = found_languages.union(corpus.tmx_languages[tmx])
         missing = corpus.languages.difference(found_languages)
-        if len(missing):
-            print(f"Corpus {corpus.number} advertised {missing} that do not appear in the TMXes. Patching metadata.", file=sys.stderr)
+        if len(tmxes) == 0:
+            print(f"Corpus {corpus.number} has no TMXes.  Hope the languages are accurate?", file=sys.stderr)
+            return
+        if len(missing) != 0:
+            print(f"Corpus {corpus.number} advertised {missing} that do not appear in the TMXes. Patching metadata to {found_languages}", file=sys.stderr)
         corpus.languages = found_languages
 
 def entry_template(corpus : Corpus, inpaths : List[str], shortname = None, languages = None):
@@ -572,9 +586,7 @@ def create_records(corpora: List[Corpus]):
             for i, l1 in enumerate(langs):
                 for l2 in langs[i+1:]:
                     yield entry_template(corpus, corpus.files, languages = (l1,l2))
-        elif len(corpus.languages) == 2:
-            if len(tmxes) != len(corpus.files):
-                raise Exception(f"Expected all TMX files.  Check for extra cruft in {corpus.number}: {corpus.files}")
+        elif len(corpus.languages) == 2 and len(tmxes) == len(corpus.files):
             yield entry_template(corpus, tmxes)
         elif len(corpus.languages) > 2 and len(tmxes) > 1:
             # Multilingual with separate TMXes.  Parse filenames into language codes and gather by language code.
@@ -594,10 +606,34 @@ def create_records(corpora: List[Corpus]):
                             pairs[pair].append(f)
                         else:
                             pairs[pair] = [f]
+            if corpus.number == 5183:
+                # not well-formed (invalid token): line 1129869, column 30.  But the others are ok.
+                del pairs[("en", "ru")]
             for pair, files in pairs.items():
                 yield entry_template(corpus, files, languages = pair)
+        elif set(name.split('.')[-1] for name in corpus.files) == corpus.languages and len(tmxes) == 0 and len(corpus.files) == len(corpus.languages):
+            # Plain text files with suffixes.  Assume multilingual if more than 2 languages.
+            langs = list(corpus.languages)
+            langs.sort()
+            name_map = {name.split('.')[-1] : name for name in corpus.files}
+            for i, l1 in enumerate(langs):
+                for l2 in langs[i+1:]:
+                    yield entry_template(corpus, [name_map[l1], name_map[l2]], languages = (l1, l2))
+        elif "MT Test Set" in corpus.name and len(corpus.languages) == 2 and len(corpus.files) == 4:
+            # Dev and Test sets in the same collection.
+            l1, l2 = list(corpus.languages)
+            # Expecting 'fi_en_finance_dev.fi', 'fi_en_finance_dev.en', 'fi_en_finance_test.en', 'fi_en_finance_test.fi'
+            mapped = {(f.split('.')[-2].split('_')[-1], f.split('.')[-1]) : f for f in corpus.files}
+            if corpus.number == 4995:    
+              # 'fi_en_finance.fi' should be 'fi_en_finance_dev.fi'
+              mapped[('dev', 'fi')] = 'fi_en_finance.fi'
+            try:
+              yield entry_template(corpus, [mapped[('dev', l1)], mapped[('dev', l2)]], languages = (l1, l2), shortname = corpus.shortname + "_dev")
+              yield entry_template(corpus, [mapped[('test', l1)], mapped[('test', l2)]], languages = (l1, l2), shortname = corpus.shortname + "_test")
+            except KeyError:
+              raise Exception(f"Unsure what the TMX structure of {corpus.number} {corpus.name} is with languages {corpus.languages} and files {corpus.files}") 
         else:
-            raise Exception(f"Unsure what the TMX structure of {corpus.number} {corpus.name} is with {corpus.files}")
+            raise Exception(f"Unsure what the TMX structure of {corpus.number} {corpus.name} is with languages {corpus.languages} and files {corpus.files}")
 
 def print_mtdata(corpora):
     for r in create_records(corpora):
